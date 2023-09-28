@@ -20,6 +20,14 @@ jobs:
       - run: |
           zig build -Dfetch -Dci_target=ubuntu-latest-aarch64 -p zig-out-ubuntu-latest-aarch64
       - run: |
+          zig build -Dfetch -Dci_target=ubuntu-latest-riscv64 -p zig-out-ubuntu-latest-riscv64
+      - run: |
+          zig build -Dfetch -Dci_target=ubuntu-latest-armv7a -p zig-out-ubuntu-latest-armv7a
+      - run: |
+          zig build -Dfetch -Dci_target=ubuntu-latest-powerpc -p zig-out-ubuntu-latest-powerpc
+      - run: |
+          zig build -Dfetch -Dci_target=ubuntu-latest-powerpc64le -p zig-out-ubuntu-latest-powerpc64le
+      - run: |
           zig build -Dfetch -Dci_target=macos-latest-x86_64 -p zig-out-macos-latest-x86_64
       - run: |
           zig build -Dfetch -Dci_target=macos-latest-aarch64 -p zig-out-macos-latest-aarch64
