@@ -31,32 +31,32 @@ jobs:
           zig build -Dfetch -Dci_target=macos-latest-aarch64 -p zig-out-macos-latest-aarch64
       - run: |
           zig build -Dfetch -Dci_target=windows-latest-x86_64 -p zig-out-windows-latest-x86_64
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: zigup ${{ matrix.os }}-${{ matrix.arch }}
           path: zig-out/bin/*
       - if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: zigup ${{ matrix.os }}-aarch64
           path: zig-out-${{matrix.os}}-aarch64/bin/*
       - if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: zigup ${{ matrix.os }}-riscv64
           path: zig-out-${{matrix.os}}-riscv64/bin/*
       - if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: zigup ${{ matrix.os }}-armv7a
           path: zig-out-${{matrix.os}}-armv7a/bin/*
       - if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: zigup ${{ matrix.os }}-powerpc
           path: zig-out-${{matrix.os}}-powerpc/bin/*
       - if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: zigup ${{ matrix.os }}-powerpc64le
           path: zig-out-${{matrix.os}}-powerpc64le/bin/*
