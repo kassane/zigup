@@ -1,7 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const Builder = std.build.Builder;
-const Pkg = std.build.Pkg;
+const Builder = std.Build;
 
 // TODO: make this work with "GitRepoStep.zig", there is a
 //       problem with the -Dfetch option
@@ -17,8 +16,8 @@ fn unwrapOptionalBool(optionalBool: ?bool) bool {
 
 pub fn build(b: *Builder) !void {
     const ziget_repo = GitRepoStep.create(b, .{
-        .url = "https://github.com/marler8997/ziget",
-        .branch = null,
+        .url = "https://github.com/kassane/ziget",
+        .branch = "main",
         .sha = @embedFile("zigetsha"),
     });
 
@@ -41,7 +40,7 @@ pub fn build(b: *Builder) !void {
 
     const optimize = b.standardOptimizeOption(.{});
 
-    const win32exelink_mod: ?*std.Build.Module = blk: {
+    const win32exelink_mod: ?*Builder.Module = blk: {
         if (target.getOs().tag == .windows) {
             const exe = b.addExecutable(.{
                 .name = "win32exelink",
@@ -79,7 +78,7 @@ pub fn build(b: *Builder) !void {
     addTest(b, exe, target, optimize);
 }
 
-fn addTest(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
+fn addTest(b: *Builder, exe: *Builder.CompileStep, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
     const test_exe = b.addExecutable(.{
         .name = "test",
         .root_source_file = .{ .path = "test.zig" },
@@ -102,9 +101,9 @@ fn addZigupExe(
     ziget_repo: *GitRepoStep,
     target: std.zig.CrossTarget,
     optimize: std.builtin.Mode,
-    win32exelink_mod: ?*std.build.Module,
+    win32exelink_mod: ?*Builder.Module,
     ssl_backend: ?SslBackend,
-) !*std.build.LibExeObjStep {
+) !*Builder.CompileStep {
     const require_ssl_backend = b.allocator.create(RequireSslBackendStep) catch unreachable;
     require_ssl_backend.* = RequireSslBackendStep.init(b, "the zigup exe", ssl_backend);
 
@@ -145,17 +144,17 @@ fn targetIsWindows(target: std.zig.CrossTarget) bool {
 }
 
 const SslBackendFailedStep = struct {
-    step: std.build.Step,
+    step: Builder.Step,
     context: []const u8,
     backend: SslBackend,
     pub fn init(b: *Builder, context: []const u8, backend: SslBackend) SslBackendFailedStep {
         return .{
-            .step = std.build.Step.init(.custom, "SslBackendFailedStep", b.allocator, make),
+            .step = Builder.Step.init(.custom, "SslBackendFailedStep", b.allocator, make),
             .context = context,
             .backend = backend,
         };
     }
-    fn make(step: *std.build.Step) !void {
+    fn make(step: *Builder.Step) !void {
         const self = @fieldParentPtr(RequireSslBackendStep, "step", step);
         std.debug.print("error: the {s} failed to add the {s} SSL backend\n", .{ self.context, self.backend });
         std.os.exit(1);
@@ -163,12 +162,12 @@ const SslBackendFailedStep = struct {
 };
 
 const RequireSslBackendStep = struct {
-    step: std.build.Step,
+    step: Builder.Step,
     context: []const u8,
     backend: ?SslBackend,
     pub fn init(b: *Builder, context: []const u8, backend: ?SslBackend) RequireSslBackendStep {
         return .{
-            .step = std.build.Step.init(.{
+            .step = Builder.Step.init(.{
                 .id = .custom,
                 .name = "RequireSslBackend",
                 .owner = b,
@@ -178,7 +177,7 @@ const RequireSslBackendStep = struct {
             .backend = backend,
         };
     }
-    fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
+    fn make(step: *Builder.Step, prog_node: *std.Progress.Node) !void {
         _ = prog_node;
         const self = @fieldParentPtr(RequireSslBackendStep, "step", step);
         if (self.backend) |_| {} else {
@@ -191,7 +190,7 @@ const RequireSslBackendStep = struct {
     }
 };
 
-fn addGithubReleaseExe(b: *Builder, github_release_step: *std.build.Step, ziget_repo: []const u8, comptime target_triple: []const u8, comptime ssl_backend: SslBackend) !void {
+fn addGithubReleaseExe(b: *Builder, github_release_step: *Builder.Step, ziget_repo: []const u8, comptime target_triple: []const u8, comptime ssl_backend: SslBackend) !void {
     const small_release = true;
 
     const target = try std.zig.CrossTarget.parse(.{ .arch_os_abi = target_triple });

@@ -3,7 +3,7 @@
 // NOTE: need to wait on https://github.com/ziglang/zig/pull/9989 before doing this
 //       to make build errors reasonable
 const std = @import("std");
-const Builder = std.build.Builder;
+const Builder = std.Build;
 
 const GitRepoStep = @import("GitRepoStep.zig");
 
@@ -20,8 +20,8 @@ fn buildNoreturn(b: *Builder) noreturn {
 }
 fn buildOrFail(b: *Builder) anyerror {
     const ziget_repo = GitRepoStep.create(b, .{
-        .url = "https://github.com/marler8997/ziget",
-        .branch = null,
+        .url = "https://github.com/kassane/ziget",
+        .branch = "main",
         .sha = @embedFile("zigetsha"),
         .fetch_enabled = true,
     });
@@ -50,8 +50,8 @@ fn getBuildArgs(self: *Builder) ![]const [:0]const u8 {
     const args = try std.process.argsAlloc(self.allocator);
     return args[5..];
 }
-pub fn addBuild(self: *Builder, build_file: std.build.FileSource, _: struct {}) *std.build.RunStep {
-    const run_step = std.build.RunStep.create(
+pub fn addBuild(self: *Builder, build_file: Builder.FileSource, _: struct {}) *Builder.RunStep {
+    const run_step = Builder.RunStep.create(
         self,
         self.fmt("zig build {s}", .{build_file.getDisplayName()}),
     );
