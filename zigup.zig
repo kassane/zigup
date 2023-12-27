@@ -85,7 +85,8 @@ fn getHomeDir() ![]const u8 {
 
 fn allocInstallDirString(allocator: Allocator) ![]const u8 {
     // TODO: maybe support a file on the filesystem to configure install dir?
-    if(std.os.getenv("ZIG_INSTALL_DIR")) |install_dir| {
+    const install_dir = try std.process.getEnvVarOwned(allocator, "ZIG_INSTALL_DIR");
+    if (!std.mem.eql(u8, install_dir, "")) {
         if (std.fs.path.isAbsolute(install_dir)) {
             return install_dir;
         } else {
@@ -103,7 +104,7 @@ fn allocInstallDirString(allocator: Allocator) ![]const u8 {
         std.log.err("$HOME environment variable '{s}' is not an absolute path", .{home});
         return error.BadHomeEnvironmentVariable;
     }
-    return std.fs.path.join(allocator, &[_][]const u8{ home, "zig" });   
+    return std.fs.path.join(allocator, &[_][]const u8{ home, "zig" });
 }
 const GetInstallDirOptions = struct {
     create: bool,
@@ -130,7 +131,8 @@ fn getInstallDir(allocator: Allocator, options: GetInstallDirOptions) ![]const u
 
 fn makeZigPathLinkString(allocator: Allocator) ![]const u8 {
     if (global_optional_path_link) |path| return path;
-    if (std.os.getenv("ZIG_PATH_LINK")) |path_link| {
+    const path_link = try std.process.getEnvVarOwned(allocator, "ZIG_PATH_LINK");
+    if (!std.mem.eql(u8, path_link, "")) {
         return try std.fs.path.join(allocator, &[_][]const u8{ path_link, comptime "zig" ++ builtin.target.exeFileExt() });
     }
 
