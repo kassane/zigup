@@ -1,6 +1,6 @@
 #!/bin/sh
 
-ZIGUP_UPDATE_ROOT="https://github.com/marler8997/zigup/releases/latest/download"
+ZIGUP_UPDATE_ROOT="https://github.com/kassane/zigup/releases/latest/download"
 ZIGUP_DIR="${HOME}/.zigup"
 
 main() {
