@@ -120,9 +120,9 @@ fn addZigupExe(
     if (targetIsWindows(target)) {
         exe.addModule("win32exelink", win32exelink_mod.?);
         const zarc_repo = GitRepoStep.create(b, .{
-            .url = "https://github.com/marler8997/zarc",
+            .url = "https://github.com/kassane/zarc",
             .branch = "protected",
-            .sha = "2e5256624d7871180badc9784b96dd66d927d604",
+            .sha = "79660223c388ed00bfae3553fb81ba1747b305ab",
             .fetch_enabled = true,
         });
         exe.step.dependOn(&zarc_repo.step);
