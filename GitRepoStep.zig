@@ -47,7 +47,7 @@ pub fn create(b: *std.build.Builder, opt: struct {
     fetch_enabled: ?bool = null,
     first_ret_addr: ?usize = null,
 }) *GitRepoStep {
-    var result = b.allocator.create(GitRepoStep) catch @panic("memory");
+    const result = b.allocator.create(GitRepoStep) catch @panic("memory");
     const name = std.fs.path.basename(opt.url);
     result.* = GitRepoStep{
         .step = std.build.Step.init(.{
@@ -134,7 +134,7 @@ fn checkSha(self: GitRepoStep) !void {
         return;
 
     const result: union(enum) { failed: anyerror, output: []const u8 } = blk: {
-        const result = std.ChildProcess.exec(.{
+        const result = std.ChildProcess.run(.{
             .allocator = self.step.owner.allocator,
             .argv = &[_][]const u8{
                 "git",
