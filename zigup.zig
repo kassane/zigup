@@ -85,7 +85,10 @@ fn getHomeDir() ![]const u8 {
 
 fn allocInstallDirString(allocator: Allocator) ![]const u8 {
     // TODO: maybe support a file on the filesystem to configure install dir?
-    const install_dir = try std.process.getEnvVarOwned(allocator, "ZIG_INSTALL_DIR");
+
+    var env_map = std.process.EnvMap.init(allocator);
+    defer env_map.deinit();
+    const install_dir = env_map.get("ZIG_INSTALL_DIR") orelse try std.process.getCwdAlloc(allocator);
     if (!std.mem.eql(u8, install_dir, "")) {
         if (std.fs.path.isAbsolute(install_dir)) {
             return install_dir;
@@ -484,7 +487,7 @@ pub fn loggyUpdateSymlink(target_path: []const u8, sym_link_path: []const u8, fl
         error.NotLink => {
             std.debug.print(
                 "unable to update/overwrite the 'zig' PATH symlink, the file '{s}' already exists and is not a symlink\n",
-                .{ sym_link_path},
+                .{sym_link_path},
             );
             std.os.exit(1);
         },
@@ -508,6 +511,7 @@ fn existsAbsolute(absolutePath: []const u8) !bool {
         error.ReadOnlyFileSystem => unreachable,
         error.NameTooLong => unreachable,
         error.BadPathName => unreachable,
+        else => return e,
     };
     return true;
 }
@@ -896,7 +900,7 @@ fn createExeLink(link_target: []const u8, path_link: []const u8) !void {
         error.IsDir => {
             std.debug.print(
                 "unable to create the exe link, the path '{s}' is a directory\n",
-                .{ path_link},
+                .{path_link},
             );
             std.os.exit(1);
         },

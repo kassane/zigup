@@ -29,19 +29,18 @@ pub fn build(b: *Builder) !void {
 
     //var github_release_step = b.step("github-release", "Build the github-release binaries");
     //try addGithubReleaseExe(b, github_release_step, ziget_repo, "x86_64-linux", .std);
-
-    const target = if (b.option([]const u8, "ci_target", "the CI target being built")) |ci_target|
-        try std.zig.CrossTarget.parse(.{ .arch_os_abi = ci_target_map.get(ci_target) orelse {
+    const ci_target = b.option([]const u8, "ci_target", "the CI target being built") orelse try b.host.query.zigTriple(b.allocator);
+    const target = b.standardTargetOptions(.{ .default_target = try std.Target.Query.parse(.{
+        .arch_os_abi = ci_target_map.get(ci_target) orelse {
             std.log.err("unknown ci_target '{s}'", .{ci_target});
             std.os.exit(1);
-        } })
-    else
-        b.standardTargetOptions(.{});
+        },
+    }) });
 
     const optimize = b.standardOptimizeOption(.{});
 
     const win32exelink_mod: ?*Builder.Module = blk: {
-        if (target.getOs().tag == .windows) {
+        if (target.result.os.tag == .windows) {
             const exe = b.addExecutable(.{
                 .name = "win32exelink",
                 .root_source_file = .{ .path = "win32exelink.zig" },
@@ -49,7 +48,7 @@ pub fn build(b: *Builder) !void {
                 .optimize = optimize,
             });
             break :blk b.createModule(.{
-                .source_file = exe.getEmittedBin(),
+                .root_source_file = exe.getEmittedBin(),
             });
         }
         break :blk null;
@@ -78,7 +77,7 @@ pub fn build(b: *Builder) !void {
     addTest(b, exe, target, optimize);
 }
 
-fn addTest(b: *Builder, exe: *Builder.CompileStep, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
+fn addTest(b: *Builder, exe: *Builder.Step.Compile, target: Builder.ResolvedTarget, optimize: std.builtin.Mode) void {
     const test_exe = b.addExecutable(.{
         .name = "test",
         .root_source_file = .{ .path = "test.zig" },
@@ -99,11 +98,11 @@ fn addTest(b: *Builder, exe: *Builder.CompileStep, target: std.zig.CrossTarget, 
 fn addZigupExe(
     b: *Builder,
     ziget_repo: *GitRepoStep,
-    target: std.zig.CrossTarget,
+    target: Builder.ResolvedTarget,
     optimize: std.builtin.Mode,
     win32exelink_mod: ?*Builder.Module,
     ssl_backend: ?SslBackend,
-) !*Builder.CompileStep {
+) !*Builder.Step.Compile {
     const require_ssl_backend = b.allocator.create(RequireSslBackendStep) catch unreachable;
     require_ssl_backend.* = RequireSslBackendStep.init(b, "the zigup exe", ssl_backend);
 
@@ -118,29 +117,27 @@ fn addZigupExe(
     zigetbuild.addZigetModule(exe, ssl_backend, ziget_repo.getPath(&exe.step));
 
     if (targetIsWindows(target)) {
-        exe.addModule("win32exelink", win32exelink_mod.?);
+        exe.root_module.addImport("win32exelink", win32exelink_mod.?);
         const zarc_repo = GitRepoStep.create(b, .{
             .url = "https://github.com/kassane/zarc",
             .branch = "protected",
-            .sha = "79660223c388ed00bfae3553fb81ba1747b305ab",
+            .sha = "9d59ec6b93309ce652e028b588a87e29beda86b0",
             .fetch_enabled = true,
         });
         exe.step.dependOn(&zarc_repo.step);
         const zarc_repo_path = zarc_repo.getPath(&exe.step);
         const zarc_mod = b.addModule("zarc", .{
-            .source_file = .{ .path = b.pathJoin(&.{ zarc_repo_path, "src", "main.zig" }) },
+            .root_source_file = .{ .path = b.pathJoin(&.{ zarc_repo_path, "src", "main.zig" }) },
         });
-        exe.addModule("zarc", zarc_mod);
+        exe.root_module.addImport("zarc", zarc_mod);
     }
 
     exe.step.dependOn(&require_ssl_backend.step);
     return exe;
 }
 
-fn targetIsWindows(target: std.zig.CrossTarget) bool {
-    if (target.os_tag) |tag|
-        return tag == .windows;
-    return builtin.target.os.tag == .windows;
+fn targetIsWindows(target: Builder.ResolvedTarget) bool {
+    return target.result.os.tag == .windows;
 }
 
 const SslBackendFailedStep = struct {
@@ -193,7 +190,7 @@ const RequireSslBackendStep = struct {
 fn addGithubReleaseExe(b: *Builder, github_release_step: *Builder.Step, ziget_repo: []const u8, comptime target_triple: []const u8, comptime ssl_backend: SslBackend) !void {
     const small_release = true;
 
-    const target = try std.zig.CrossTarget.parse(.{ .arch_os_abi = target_triple });
+    const target = try std.Target.Query.parse(.{ .arch_os_abi = target_triple });
     const mode = if (small_release) .ReleaseSafe else .Debug;
     const exe = try addZigupExe(b, ziget_repo, target, mode, ssl_backend);
     if (small_release) {

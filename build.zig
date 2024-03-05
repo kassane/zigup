@@ -50,15 +50,15 @@ fn getBuildArgs(self: *Builder) ![]const [:0]const u8 {
     const args = try std.process.argsAlloc(self.allocator);
     return args[5..];
 }
-pub fn addBuild(self: *Builder, build_file: Builder.FileSource, _: struct {}) *Builder.RunStep {
-    const run_step = Builder.RunStep.create(
+pub fn addBuild(self: *Builder, build_file: Builder.LazyPath, _: struct {}) *Builder.Step.Run {
+    const run_step = Builder.Step.Run.create(
         self,
         self.fmt("zig build {s}", .{build_file.getDisplayName()}),
     );
-    run_step.addArg(self.zig_exe);
+    run_step.addArg(self.graph.zig_exe);
     run_step.addArg("build");
     run_step.addArg("--build-file");
-    run_step.addFileSourceArg(build_file);
+    run_step.addFileArg(build_file);
     run_step.addArg("--cache-dir");
     const cache_root_path = self.cache_root.path orelse @panic("todo");
     run_step.addArg(self.pathFromRoot(cache_root_path));
