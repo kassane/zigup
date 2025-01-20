@@ -7,6 +7,9 @@ pub fn build(b: *std.Build) !void {
 
     const zigup_exe_native = blk: {
         const exe = addZigupExe(b, target, optimize);
+        if (builtin.os.tag == .freebsd) {
+            exe.linkLibC();
+        }
         b.installArtifact(exe);
         const run_cmd = b.addRunArtifact(exe);
         run_cmd.step.dependOn(b.getInstallStep());
@@ -51,6 +54,9 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
         });
+        if (builtin.os.tag == .freebsd) {
+            zip.linkLibC();
+        }
         const install = b.addInstallArtifact(zip, .{});
         zip_step.dependOn(&install.step);
     }
@@ -107,23 +113,30 @@ fn ci(
     ci_step: *std.Build.Step,
     host_zip_exe: *std.Build.Step.Compile,
 ) !void {
-    const ci_targets = [_][]const u8{
-        "x86_64-linux",
-        "x86_64-macos",
-        "x86_64-windows",
-        "aarch64-linux",
-        "aarch64-macos",
-        "aarch64-windows",
-        "arm-linux",
-        "riscv64-linux",
-        "powerpc-linux",
-        "powerpc64le-linux",
-    };
+    var ci_targets = try std.BoundedArray([]const u8, 64).init(0);
+
+    if (builtin.os.tag == .freebsd) {
+        try ci_targets.append("x86_64-freebsd");
+        host_zip_exe.linkLibC();
+    } else {
+        try ci_targets.appendSlice(&.{
+            "x86_64-linux",
+            "x86_64-macos",
+            "x86_64-windows",
+            "aarch64-linux",
+            "aarch64-macos",
+            "aarch64-windows",
+            "arm-linux",
+            "riscv64-linux",
+            "powerpc-linux",
+            "powerpc64le-linux",
+        });
+    }
 
     const make_archive_step = b.step("archive", "Create CI archives");
     ci_step.dependOn(make_archive_step);
 
-    for (ci_targets) |ci_target_str| {
+    for (ci_targets.slice()) |ci_target_str| {
         const target = b.resolveTargetQuery(try std.Target.Query.parse(
             .{ .arch_os_abi = ci_target_str },
         ));

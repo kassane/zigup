@@ -30,3 +30,25 @@ jobs:
             zig-out/zigup-riscv64-linux.tar.gz
             zig-out/zigup-powerpc-linux.tar.gz
             zig-out/zigup-powerpc64le-linux.tar.gz
+
+  freebsd:
+    strategy:
+      matrix:
+        arch: [x86_64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "15.0"
+          usesh: true
+          prepare: |
+            pkg install -y zig
+          run: |
+            zig build ci --summary all
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: zigup-archives
+          path: zig-out/zigup-x86_64-freebsd.tar.gz
