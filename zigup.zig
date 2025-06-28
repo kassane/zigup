@@ -9,7 +9,7 @@ const fixdeletetree = @import("fixdeletetree.zig");
 
 const arch = switch (builtin.cpu.arch) {
     .aarch64 => "aarch64",
-    .arm => "armv7a",
+    .arm => "arm",
     .powerpc64 => "powerpc64",
     .powerpc64le => "powerpc64le",
     .riscv64 => "riscv64",
